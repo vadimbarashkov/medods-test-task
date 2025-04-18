@@ -38,14 +38,48 @@ func (s *Server) validate() error {
 	return nil
 }
 
+type Postgres struct {
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Database string `yaml:"database"`
+}
+
+var defaultPostgres = Postgres{
+	Host: "localhost",
+	Port: 5432,
+}
+
+func (p *Postgres) validate() error {
+	var errs []error
+
+	if p.User == "" {
+		errs = append(errs, errors.New("missing user"))
+	}
+	if p.Password == "" {
+		errs = append(errs, errors.New("missing password"))
+	}
+	if !(p.Port >= 1 && p.Port <= 65535) {
+		errs = append(errs, fmt.Errorf("invalid port: %d", p.Port))
+	}
+	if p.Database == "" {
+		errs = append(errs, errors.New("missing database"))
+	}
+
+	return errors.Join(errs...)
+}
+
 type Config struct {
-	Env    string `yaml:"env"`
-	Server Server `yaml:"server"`
+	Env      string   `yaml:"env"`
+	Server   Server   `yaml:"server"`
+	Postgres Postgres `yaml:"postgres"`
 }
 
 var defaultConfig = Config{
-	Env:    EnvDev,
-	Server: defaultServer,
+	Env:      EnvDev,
+	Server:   defaultServer,
+	Postgres: defaultPostgres,
 }
 
 func (c *Config) validate() error {
@@ -56,6 +90,9 @@ func (c *Config) validate() error {
 	}
 	if err := c.Server.validate(); err != nil {
 		errs = append(errs, fmt.Errorf("invalid server: %w", err))
+	}
+	if err := c.Postgres.validate(); err != nil {
+		errs = append(errs, fmt.Errorf("invalid postgres: %w", err))
 	}
 
 	return errors.Join(errs...)
