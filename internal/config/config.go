@@ -32,10 +32,25 @@ var defaultServer = Server{
 }
 
 func (s *Server) validate() error {
+	var errs []error
+
 	if !(s.Port >= 1 && s.Port <= 65535) {
-		return fmt.Errorf("invalid port: %d", s.Port)
+		errs = append(errs, fmt.Errorf("invalid port: %d", s.Port))
 	}
-	return nil
+	if s.ReadTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("read_timeout must be positive: %v", s.ReadTimeout))
+	}
+	if s.WriteTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("write_timeout must be positive: %v", s.WriteTimeout))
+	}
+	if s.IdleTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("idle_timeout must be positive: %v", s.IdleTimeout))
+	}
+	if s.MaxHeaderBytes < 0 {
+		errs = append(errs, fmt.Errorf("max_header_bytes cannot be negative: %d", s.MaxHeaderBytes))
+	}
+
+	return errors.Join(errs...)
 }
 
 type Postgres struct {
