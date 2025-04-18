@@ -31,10 +31,14 @@ var defaultServer = Server{
 	MaxHeaderBytes: 1 << 20,
 }
 
+func (s *Server) isValidPort() bool {
+	return s.Port >= 1 && s.Port <= 65535
+}
+
 func (s *Server) validate() error {
 	var errs []error
 
-	if !(s.Port >= 1 && s.Port <= 65535) {
+	if !s.isValidPort() {
 		errs = append(errs, fmt.Errorf("invalid port: %d", s.Port))
 	}
 	if s.ReadTimeout <= 0 {
@@ -66,6 +70,10 @@ var defaultPostgres = Postgres{
 	Port: 5432,
 }
 
+func (p *Postgres) isValidPort() bool {
+	return p.Port >= 1 && p.Port <= 65535
+}
+
 func (p *Postgres) validate() error {
 	var errs []error
 
@@ -75,7 +83,7 @@ func (p *Postgres) validate() error {
 	if p.Password == "" {
 		errs = append(errs, errors.New("missing password"))
 	}
-	if !(p.Port >= 1 && p.Port <= 65535) {
+	if !p.isValidPort() {
 		errs = append(errs, fmt.Errorf("invalid port: %d", p.Port))
 	}
 	if p.Database == "" {
