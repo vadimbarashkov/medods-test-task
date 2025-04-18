@@ -20,5 +20,7 @@
 
 !Makefile
 
+!.github/**
+
 # ...even if they are in subdirectories
 !*/
