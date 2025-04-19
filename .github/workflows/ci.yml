@@ -62,7 +62,7 @@ jobs:
           go-version-file: ./go.mod
 
       - name: Build binary
-        run: go build -v -o ./tmp/bin/main ./...
+        run: go build -v -o ./bin/main ./cmd/*
 
   test:
     needs: build
