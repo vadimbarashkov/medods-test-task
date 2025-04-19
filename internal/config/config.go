@@ -15,6 +15,37 @@ const (
 	EnvProd = "prod"
 )
 
+type Tokens struct {
+	AccessSecret  string        `yaml:"access_secret"`
+	AccessTTL     time.Duration `yaml:"access_ttl"`
+	RefreshSecret string        `yaml:"refresh_secret"`
+	RefreshTTL    time.Duration `yaml:"refresh_ttl"`
+}
+
+var defautlTokens = Tokens{
+	AccessTTL:  15 * time.Minute,
+	RefreshTTL: time.Hour,
+}
+
+func (t *Tokens) validate() error {
+	var errs []error
+
+	if t.AccessSecret == "" {
+		errs = append(errs, errors.New("missing access_secret"))
+	}
+	if t.AccessTTL <= 0 {
+		errs = append(errs, fmt.Errorf("access_ttl must be positive: %v", t.AccessTTL))
+	}
+	if t.RefreshSecret == "" {
+		errs = append(errs, errors.New("missing refresh_secret"))
+	}
+	if t.RefreshTTL <= 0 {
+		errs = append(errs, fmt.Errorf("refresh_ttl must be positive: %v", t.RefreshTTL))
+	}
+
+	return errors.Join(errs...)
+}
+
 type Server struct {
 	Port           int           `yaml:"port"`
 	ReadTimeout    time.Duration `yaml:"read_timeout"`
@@ -95,12 +126,14 @@ func (p *Postgres) validate() error {
 
 type Config struct {
 	Env      string   `yaml:"env"`
+	Tokens   Tokens   `yaml:"tokens"`
 	Server   Server   `yaml:"server"`
 	Postgres Postgres `yaml:"postgres"`
 }
 
 var defaultConfig = Config{
 	Env:      EnvDev,
+	Tokens:   defautlTokens,
 	Server:   defaultServer,
 	Postgres: defaultPostgres,
 }
@@ -110,6 +143,9 @@ func (c *Config) validate() error {
 
 	if c.Env != EnvDev && c.Env != EnvTest && c.Env != EnvProd {
 		errs = append(errs, fmt.Errorf("invalid env: %q", c.Env))
+	}
+	if err := c.Tokens.validate(); err != nil {
+		errs = append(errs, fmt.Errorf("invalid tokens: %w", err))
 	}
 	if err := c.Server.validate(); err != nil {
 		errs = append(errs, fmt.Errorf("invalid server: %w", err))
