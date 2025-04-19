@@ -31,7 +31,7 @@ vet: ## Run go vet.
 lint: ## Lint the code.
 	@echo "Running lint checks..."
 	@command -v golangci-lint > /dev/null 2>&1 || { echo "golangci-lint not found"; exit 1; }
-	golangci-lint run
+	golangci-lint run --config=./.golangci.yml
 
 test: ## Run unit tests.
 	@echo "Running unit tests..."

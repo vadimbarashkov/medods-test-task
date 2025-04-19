@@ -22,5 +22,7 @@
 
 !.github/**
 
+!.golangci.yml
+
 # ...even if they are in subdirectories
 !*/
