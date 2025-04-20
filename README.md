@@ -146,4 +146,4 @@ The behavior of the application depends on the `env` passed in the configuration
 
 ## License
 
-This project is licensed under the WTFPL License - see the LICENSE file for details.
+This project is licensed under the WTFPL License - see the `LICENSE` file for details.
