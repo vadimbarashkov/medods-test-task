@@ -39,13 +39,13 @@ func ApplyMigrations(ctx context.Context, dsn, path string) error {
 	dsn = removePoolParams(dsn)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return fmt.Errorf("connect to database: %w", err)
 	}
 	defer db.Close()
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		return fmt.Errorf("failed to create migrate driver: %w", err)
+		return fmt.Errorf("create migrate driver: %w", err)
 	}
 
 	if !strings.HasPrefix(path, "file://") {
@@ -54,11 +54,11 @@ func ApplyMigrations(ctx context.Context, dsn, path string) error {
 
 	m, err := migrate.NewWithDatabaseInstance(path, "postgres", driver)
 	if err != nil {
-		return fmt.Errorf("failed to create migrate instanse: %w", err)
+		return fmt.Errorf("create migrate instanse: %w", err)
 	}
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return fmt.Errorf("failed to apply migrations: %w", err)
+		return fmt.Errorf("apply migrations: %w", err)
 	}
 
 	return nil

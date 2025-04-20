@@ -31,7 +31,7 @@ func (r *RefreshTokenRepository) Save(ctx context.Context, userID, jti uuid.UUID
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationErrCode {
 			return repository.ErrRefreshTokenExists
 		}
-		return fmt.Errorf("failed to execute query: %w", err)
+		return fmt.Errorf("execute query: %w", err)
 	}
 
 	return nil
@@ -54,7 +54,7 @@ func (r *RefreshTokenRepository) Get(ctx context.Context, userID, jti uuid.UUID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", false, repository.ErrRefreshTokenNotFound
 		}
-		return "", false, fmt.Errorf("failed to execute query: %w", err)
+		return "", false, fmt.Errorf("execute query: %w", err)
 	}
 
 	return hashedToken, revoked, nil
@@ -69,7 +69,7 @@ func (r *RefreshTokenRepository) Revoke(ctx context.Context, userID, jti uuid.UU
 
 	result, err := exec(ctx, r.pool, query, userID, jti)
 	if err != nil {
-		return fmt.Errorf("failed to execute query: %w", err)
+		return fmt.Errorf("execute query: %w", err)
 	}
 
 	if result.RowsAffected() == 0 {
@@ -87,13 +87,13 @@ func (r *RefreshTokenRepository) Transaction(ctx context.Context, fn func(contex
 
 	if err := fn(contextWithTx(ctx, tx)); err != nil {
 		if errTx := tx.Rollback(ctx); errTx != nil {
-			return fmt.Errorf("failed to rollback transaction: %w", errTx)
+			return fmt.Errorf("rollback transaction: %w", errTx)
 		}
-		return fmt.Errorf("failed to execute operation: %w", err)
+		return fmt.Errorf("execute operation: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
