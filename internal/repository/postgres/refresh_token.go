@@ -20,20 +20,13 @@ func NewRefreshTokenRepository(pool *pgxpool.Pool) *RefreshTokenRepository {
 	return &RefreshTokenRepository{pool: pool}
 }
 
-func (r *RefreshTokenRepository) Save(ctx context.Context, userID uuid.UUID, hashedToken string) error {
+func (r *RefreshTokenRepository) Save(ctx context.Context, userID, jti uuid.UUID, hashedToken string) error {
 	query := `
-		INSERT INTO refresh_tokens (user_id, hashed_token)
-		VALUES ($1, $2)
+		INSERT INTO refresh_tokens (user_id, jti, hashed_token)
+		VALUES ($1, $2, $3)
 	`
 
-	var err error
-	if tx, ok := txFromContext(ctx); ok {
-		_, err = tx.Exec(ctx, query, userID, hashedToken)
-	} else {
-		_, err = r.pool.Exec(ctx, query, userID, hashedToken)
-	}
-
-	if err != nil {
+	if _, err := exec(ctx, r.pool, query, userID, jti, hashedToken); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationErrCode {
 			return repository.ErrRefreshTokenExists
@@ -44,11 +37,11 @@ func (r *RefreshTokenRepository) Save(ctx context.Context, userID uuid.UUID, has
 	return nil
 }
 
-func (r *RefreshTokenRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (string, bool, error) {
+func (r *RefreshTokenRepository) Get(ctx context.Context, userID, jti uuid.UUID) (string, bool, error) {
 	query := `
 		SELECT hashed_token, revoked
 		FROM refresh_tokens
-		WHERE user_id = $1
+		WHERE user_id = $1 AND jti = $2
 	`
 
 	var (
@@ -56,14 +49,8 @@ func (r *RefreshTokenRepository) GetByUserID(ctx context.Context, userID uuid.UU
 		revoked     bool
 	)
 
-	var err error
-	if tx, ok := txFromContext(ctx); ok {
-		err = tx.QueryRow(ctx, query, userID).Scan(&hashedToken, &revoked)
-	} else {
-		err = r.pool.QueryRow(ctx, query, userID).Scan(&hashedToken, &revoked)
-	}
-
-	if err != nil {
+	row := queryRow(ctx, r.pool, query, userID, jti)
+	if err := row.Scan(&hashedToken, &revoked); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", false, repository.ErrRefreshTokenNotFound
 		}
@@ -73,23 +60,14 @@ func (r *RefreshTokenRepository) GetByUserID(ctx context.Context, userID uuid.UU
 	return hashedToken, revoked, nil
 }
 
-func (r *RefreshTokenRepository) Revoke(ctx context.Context, userID uuid.UUID) error {
+func (r *RefreshTokenRepository) Revoke(ctx context.Context, userID, jti uuid.UUID) error {
 	query := `
 		UPDATE refresh_tokens
 		SET revoked = TRUE
-		WHERE user_id = $1
+		WHERE user_id = $1 AND jti = $2
 	`
 
-	var (
-		result pgconn.CommandTag
-		err    error
-	)
-	if tx, ok := txFromContext(ctx); ok {
-		result, err = tx.Exec(ctx, query, userID)
-	} else {
-		result, err = r.pool.Exec(ctx, query, userID)
-	}
-
+	result, err := exec(ctx, r.pool, query, userID, jti)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}

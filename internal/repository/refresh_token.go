@@ -13,8 +13,8 @@ var (
 )
 
 type RefreshTokenRepository interface {
-	Save(ctx context.Context, userID uuid.UUID, hashedToken string) error
-	GetByUserID(ctx context.Context, userID uuid.UUID) (string, bool, error)
-	Revoke(ctx context.Context, userID uuid.UUID) error
+	Save(ctx context.Context, userID, jti uuid.UUID, hashedToken string) error
+	Get(ctx context.Context, userID, jti uuid.UUID) (string, bool, error)
+	Revoke(ctx context.Context, userID, jti uuid.UUID) error
 	Transaction(ctx context.Context, fn func(context.Context) error) error
 }

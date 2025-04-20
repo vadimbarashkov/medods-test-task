@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS refresh_tokens(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
+    jti UUID NOT NULL UNIQUE,
     hashed_token TEXT NOT NULL UNIQUE,
     revoked BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
