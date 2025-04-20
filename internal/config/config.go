@@ -43,6 +43,10 @@ var defaultServer = Server{
 	MaxHeaderBytes: 1 << 20,
 }
 
+func (s *Server) Addr() string {
+	return fmt.Sprintf(":%d", s.Port)
+}
+
 type Postgres struct {
 	User              string        `yaml:"user" validate:"required"`
 	Password          string        `yaml:"password" validate:"required"`
