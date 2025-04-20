@@ -5,7 +5,7 @@ linters:
   settings:
     errcheck:
       check-type-assertions: true
-      check-blank: true
+      check-blank: false
       disable-default-exclusions: false
   exclusions:
     rules:

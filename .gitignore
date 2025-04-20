@@ -9,6 +9,7 @@
 
 # But not these files...
 !/.gitignore
+!.github/**
 
 !*.go
 !go.sum
@@ -18,9 +19,18 @@
 !LICENSE
 !test-task.md
 
+!api/**
+!config.example.yml
+
 !Makefile
 
-!.github/**
+!.golangci.yml
+
+!migrations/**
+
+!Dockerfile
+!.dockerignore
+!docker-compose.yml
 
 !.golangci.yml
 

@@ -1,11 +1,16 @@
 APP_NAME := auth-service
 SRC_DIR := ./cmd
 BUILD_DIR := ./bin
+MIGRATIONS_DIR := ./migrations
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
-.PHONY: all ci build run fmt vet lint test tidy clean help
+CONFIG_PATH ?= ./config.yml
+
+.PHONY: all ci build run fmt vet lint test tidy clean help \
+migrate-create migrate-up migrate-down \
+docker-compose-up docker-compose-down
 
 all: build ## Default target: Build the project.
 
@@ -18,7 +23,7 @@ build: ## Build the project binary.
 
 run: build ## Build and run the application.
 	@echo "Running the application..."
-	"${BUILD_DIR}/${APP_NAME}"
+	"${BUILD_DIR}/${APP_NAME}" -configPath="${CONFIG_PATH}"
 
 fmt: ## Format code using gofmt.
 	@echo "Formatting code..."
@@ -45,6 +50,38 @@ clean: ## Remove build files and artifacts.
 	@echo "Cleaning up..."
 	@if test -d "${BUILD_DIR}"; then rm -rf "${BUILD_DIR}"; fi
 	go clean -testcache
+
+migrate-create: ## Create a new migration. Usage: MIGRATION_NAME=<name> make migrate-create
+	@echo "Creating database migration..."
+	@if [ -z "${MIGRATION_NAME}" ]; then \
+		echo "Error: MIGRATION_NAME is required"; \
+		exit 1; \
+	fi
+	migrate create -ext sql -dir "${MIGRATIONS_DIR}" -seq "${MIGRATION_NAME}"
+
+migrate-up: ## Apply all migrations. Usage: DATABASE_DSN=<dsn> make migrate-up
+	@echo "Applying database migrations..."
+	@if [ -z "${DATABASE_DSN}" ]; then \
+		echo "Error: DATABASE_DSN is required"; \
+		exit 1; \
+	fi
+	migrate -database "${DATABASE_DSN}" -path "${MIGRATIONS_DIR}" up
+
+migrate-down: ## Rollback all migrations. Usage: DATABASE_DSN=<dsn> make migrate-down
+	@echo "Rollbacking all migrations..."
+	@if [ -z "${DATABASE_DSN}" ]; then \
+		echo "Error: DATABASE_DSN is required"; \
+		exit 1; \
+	fi
+	migrate -database "${DATABASE_DSN}" -path "${MIGRATIONS_DIR}" down
+
+docker-compose-up: ## Create and start containers. Usage: make docker-compose-up CONFIG_PATH=<path>
+	@echo "Creating and starting containers..."
+	CONFIG_PATH="${CONFIG_PATH}" docker-compose up -d
+
+docker-compose-down: ## Stop and remove containers.
+	@echo "Stopping and removing containers..."
+	docker-compose down
 
 help: ## Display help for each target.
 	@echo "Usage: make [target]"

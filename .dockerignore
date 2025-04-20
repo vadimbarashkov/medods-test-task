@@ -1,0 +1,52 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.o
+*.a
+
+# Go build cache & dependencies
+bin/
+# pkg/
+vendor/
+
+# VCS & CI
+.git
+.gitignore
+.gitattributes
+.github/
+.gitlab/
+.gitlab-ci.yml
+.circleci/
+
+# Editor & OS files
+*.swp
+*.swo
+*.DS_Store
+*.idea/
+*.vscode/
+*.log
+
+# Docker-related
+Dockerfile*
+docker-compose.yml
+.dockerignore
+
+# Test coverage
+coverage.*
+*.coverprofile
+
+# Testdata
+testdata/
+
+# Project related
+LICENSE
+README.md
+test-task.md
+Makefile
+.golangci.yml
+config.yml
