@@ -113,13 +113,13 @@ func (c *Config) validate() error {
 func Load(path string) (*Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %w", err)
+		return nil, fmt.Errorf("open config file: %w", err)
 	}
 	defer f.Close()
 
 	cfg := defaultConfig
 	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to decode config file: %w", err)
+		return nil, fmt.Errorf("decode config file: %w", err)
 	}
 
 	if err := cfg.validate(); err != nil {
