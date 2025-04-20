@@ -44,7 +44,7 @@ func (r *RefreshTokenRepository) Save(ctx context.Context, userID uuid.UUID, has
 	return nil
 }
 
-func (r *RefreshTokenRepository) GetByUserID(ctx context.Context, userID int64) (string, bool, error) {
+func (r *RefreshTokenRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (string, bool, error) {
 	query := `
 		SELECT hashed_token, revoked
 		FROM refresh_tokens
@@ -73,7 +73,7 @@ func (r *RefreshTokenRepository) GetByUserID(ctx context.Context, userID int64) 
 	return hashedToken, revoked, nil
 }
 
-func (r *RefreshTokenRepository) Revoke(ctx context.Context, userID int64) error {
+func (r *RefreshTokenRepository) Revoke(ctx context.Context, userID uuid.UUID) error {
 	query := `
 		UPDATE refresh_tokens
 		SET revoked = TRUE

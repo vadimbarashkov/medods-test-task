@@ -14,7 +14,7 @@ var (
 
 type RefreshTokenRepository interface {
 	Save(ctx context.Context, userID uuid.UUID, hashedToken string) error
-	GetByUserID(ctx context.Context, userID int64) (string, bool, error)
-	Revoke(ctx context.Context, userID int64) error
+	GetByUserID(ctx context.Context, userID uuid.UUID) (string, bool, error)
+	Revoke(ctx context.Context, userID uuid.UUID) error
 	Transaction(ctx context.Context, fn func(context.Context) error) error
 }
