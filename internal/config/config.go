@@ -1,11 +1,11 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-yaml"
 )
 
@@ -16,10 +16,10 @@ const (
 )
 
 type Tokens struct {
-	AccessSecret  string        `yaml:"access_secret"`
-	AccessTTL     time.Duration `yaml:"access_ttl"`
-	RefreshSecret string        `yaml:"refresh_secret"`
-	RefreshTTL    time.Duration `yaml:"refresh_ttl"`
+	AccessSecret  string        `yaml:"access_secret" validate:"required"`
+	AccessTTL     time.Duration `yaml:"access_ttl" validate:"gt=0"`
+	RefreshSecret string        `yaml:"refresh_secret" validate:"required"`
+	RefreshTTL    time.Duration `yaml:"refresh_ttl" validate:"gt=0"`
 }
 
 var defautlTokens = Tokens{
@@ -27,31 +27,12 @@ var defautlTokens = Tokens{
 	RefreshTTL: time.Hour,
 }
 
-func (t *Tokens) validate() error {
-	var errs []error
-
-	if t.AccessSecret == "" {
-		errs = append(errs, errors.New("missing access_secret"))
-	}
-	if t.AccessTTL <= 0 {
-		errs = append(errs, fmt.Errorf("access_ttl must be positive: %v", t.AccessTTL))
-	}
-	if t.RefreshSecret == "" {
-		errs = append(errs, errors.New("missing refresh_secret"))
-	}
-	if t.RefreshTTL <= 0 {
-		errs = append(errs, fmt.Errorf("refresh_ttl must be positive: %v", t.RefreshTTL))
-	}
-
-	return errors.Join(errs...)
-}
-
 type Server struct {
-	Port           int           `yaml:"port"`
-	ReadTimeout    time.Duration `yaml:"read_timeout"`
-	WriteTimeout   time.Duration `yaml:"write_timeout"`
-	IdleTimeout    time.Duration `yaml:"idle_timeout"`
-	MaxHeaderBytes int           `yaml:"max_header_bytes"`
+	Port           int           `yaml:"port" validate:"required,min=1,max=65535"`
+	ReadTimeout    time.Duration `yaml:"read_timeout" validate:"gt=0"`
+	WriteTimeout   time.Duration `yaml:"write_timeout" validate:"gt=0"`
+	IdleTimeout    time.Duration `yaml:"idle_timeout" validate:"gt=0"`
+	MaxHeaderBytes int           `yaml:"max_header_bytes" validate:"gte=0"`
 }
 
 var defaultServer = Server{
@@ -62,73 +43,58 @@ var defaultServer = Server{
 	MaxHeaderBytes: 1 << 20,
 }
 
-func (s *Server) isValidPort() bool {
-	return s.Port >= 1 && s.Port <= 65535
-}
-
-func (s *Server) validate() error {
-	var errs []error
-
-	if !s.isValidPort() {
-		errs = append(errs, fmt.Errorf("invalid port: %d", s.Port))
-	}
-	if s.ReadTimeout <= 0 {
-		errs = append(errs, fmt.Errorf("read_timeout must be positive: %v", s.ReadTimeout))
-	}
-	if s.WriteTimeout <= 0 {
-		errs = append(errs, fmt.Errorf("write_timeout must be positive: %v", s.WriteTimeout))
-	}
-	if s.IdleTimeout <= 0 {
-		errs = append(errs, fmt.Errorf("idle_timeout must be positive: %v", s.IdleTimeout))
-	}
-	if s.MaxHeaderBytes < 0 {
-		errs = append(errs, fmt.Errorf("max_header_bytes cannot be negative: %d", s.MaxHeaderBytes))
-	}
-
-	return errors.Join(errs...)
-}
-
 type Postgres struct {
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Database string `yaml:"database"`
+	User              string        `yaml:"user" validate:"required"`
+	Password          string        `yaml:"password" validate:"required"`
+	Host              string        `yaml:"host" validate:"required"`
+	Port              int           `yaml:"port" validate:"required,min=1,max=65535"`
+	Database          string        `yaml:"database" validate:"required"`
+	SSLMode           string        `yaml:"sslmode" validate:"required,oneof=disable require verify-ca verify-full"`
+	MaxConns          int32         `yaml:"max_conns" validate:"gt=0"`
+	MinConns          int32         `yaml:"min_conns" validate:"gte=0"`
+	MaxConnLifetime   time.Duration `yaml:"max_conn_lifetime" validate:"gt=0"`
+	MaxConnIdleTime   time.Duration `yaml:"max_conn_idle_time" validate:"gt=0"`
+	HealthCheckPeriod time.Duration `yaml:"health_check_period" validate:"gt=0"`
+	MigrationsPath    string        `yaml:"migrations_path" validate:"required"`
 }
 
 var defaultPostgres = Postgres{
-	Host: "localhost",
-	Port: 5432,
+	Host:              "localhost",
+	Port:              5432,
+	SSLMode:           "disable",
+	MaxConns:          20,
+	MinConns:          4,
+	MaxConnLifetime:   time.Hour,
+	MaxConnIdleTime:   30 * time.Minute,
+	HealthCheckPeriod: time.Minute,
+	MigrationsPath:    "./migraions",
 }
 
-func (p *Postgres) isValidPort() bool {
-	return p.Port >= 1 && p.Port <= 65535
-}
-
-func (p *Postgres) validate() error {
-	var errs []error
-
-	if p.User == "" {
-		errs = append(errs, errors.New("missing user"))
-	}
-	if p.Password == "" {
-		errs = append(errs, errors.New("missing password"))
-	}
-	if !p.isValidPort() {
-		errs = append(errs, fmt.Errorf("invalid port: %d", p.Port))
-	}
-	if p.Database == "" {
-		errs = append(errs, errors.New("missing database"))
-	}
-
-	return errors.Join(errs...)
+func (p *Postgres) DSN() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s&"+
+			"pool_max_conns=%d&pool_min_conns=%d&"+
+			"pool_max_conn_lifetime=%v&pool_max_conn_idle_time=%v&"+
+			"pool_health_check_period=%v",
+		p.User,
+		p.Password,
+		p.Host,
+		p.Port,
+		p.Database,
+		p.SSLMode,
+		p.MaxConns,
+		p.MinConns,
+		p.MaxConnLifetime,
+		p.MaxConnIdleTime,
+		p.HealthCheckPeriod,
+	)
 }
 
 type Config struct {
-	Env      string   `yaml:"env"`
-	Tokens   Tokens   `yaml:"tokens"`
-	Server   Server   `yaml:"server"`
-	Postgres Postgres `yaml:"postgres"`
+	Env      string   `yaml:"env" validate:"required,oneof=dev test prod"`
+	Tokens   Tokens   `yaml:"tokens" validate:"required"`
+	Server   Server   `yaml:"server" validate:"required"`
+	Postgres Postgres `yaml:"postgres" validate:"required"`
 }
 
 var defaultConfig = Config{
@@ -138,23 +104,10 @@ var defaultConfig = Config{
 	Postgres: defaultPostgres,
 }
 
+var validate = validator.New()
+
 func (c *Config) validate() error {
-	var errs []error
-
-	if c.Env != EnvDev && c.Env != EnvTest && c.Env != EnvProd {
-		errs = append(errs, fmt.Errorf("invalid env: %q", c.Env))
-	}
-	if err := c.Tokens.validate(); err != nil {
-		errs = append(errs, fmt.Errorf("invalid tokens: %w", err))
-	}
-	if err := c.Server.validate(); err != nil {
-		errs = append(errs, fmt.Errorf("invalid server: %w", err))
-	}
-	if err := c.Postgres.validate(); err != nil {
-		errs = append(errs, fmt.Errorf("invalid postgres: %w", err))
-	}
-
-	return errors.Join(errs...)
+	return validate.Struct(c)
 }
 
 func Load(path string) (*Config, error) {

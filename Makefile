@@ -1,11 +1,12 @@
 APP_NAME := auth-service
 SRC_DIR := ./cmd
 BUILD_DIR := ./bin
+MIGRATIONS_DIR := ./migrations
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
-.PHONY: all ci build run fmt vet lint test tidy clean help
+.PHONY: all ci build run fmt vet lint test tidy clean help migrate-create migrate-up migrate-down
 
 all: build ## Default target: Build the project.
 
@@ -45,6 +46,30 @@ clean: ## Remove build files and artifacts.
 	@echo "Cleaning up..."
 	@if test -d "${BUILD_DIR}"; then rm -rf "${BUILD_DIR}"; fi
 	go clean -testcache
+
+migrate-create: ## Create a new migration. Usage: make migrate-create MIGRATION_NAME=<name>
+	@echo "Creating database migration..."
+	@if [ -z "${MIGRATION_NAME}" ]; then \
+		echo "Error: MIGRATION_NAME is required"; \
+		exit 1; \
+	fi
+	migrate create -ext sql -dir "${MIGRATIONS_DIR}" -seq "${MIGRATION_NAME}"
+
+migrate-up: ## Apply all migrations. Usage: make migrate-up DATABASE_DSN=<dsn>
+	@echo "Applying database migrations..."
+	@if [ -z "${DATABASE_DSN}" ]; then \
+		echo "Error: DATABASE_DSN is required"; \
+		exit 1; \
+	fi
+	migrate -database "${DATABASE_DSN}" -path "${MIGRATIONS_DIR}" up
+
+migrate-down: ## Rollback all migrations. Usage: make migrate-down DATABASE_DSN=<dsn>
+	@echo "Rollbacking all migrations..."
+	@if [ -z "${DATABASE_DSN}" ]; then \
+		echo "Error: DATABASE_DSN is required"; \
+		exit 1; \
+	fi
+	migrate -database "${DATABASE_DSN}" -path "${MIGRATIONS_DIR}" down
 
 help: ## Display help for each target.
 	@echo "Usage: make [target]"
