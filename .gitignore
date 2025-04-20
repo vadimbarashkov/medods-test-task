@@ -19,6 +19,9 @@
 !LICENSE
 !test-task.md
 
+!api/**
+!config.example.yml
+
 !Makefile
 
 !.golangci.yml
