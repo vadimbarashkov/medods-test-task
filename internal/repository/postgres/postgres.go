@@ -8,9 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const (
-	uniqueViolationErrCode = "23505"
-)
+const uniqueViolationErrCode = "23505"
 
 type txKey struct{}
 
