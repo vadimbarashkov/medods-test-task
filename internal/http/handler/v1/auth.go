@@ -19,8 +19,10 @@ type AuthHandler struct {
 func RegisterAuthRoutes(r chi.Router, authService *service.AuthService) {
 	h := &AuthHandler{authService: authService}
 
-	r.Post("/auth/tokens", h.IssueTokens)
-	r.Post("/auth/tokens/refresh", h.RefreshTokens)
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/tokens", h.IssueTokens)
+		r.Post("/tokens/refresh", h.RefreshTokens)
+	})
 }
 
 type TokensResponse struct {

@@ -25,6 +25,8 @@
 
 !migrations/**
 
+!Dockerfile
+!.dockerignore
 !docker-compose.yml
 
 # ...even if they are in subdirectories
