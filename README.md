@@ -1,4 +1,4 @@
-# URL Shortener Service
+# Auth Service
 
 A scalable Authentication Service written in Go.
 
